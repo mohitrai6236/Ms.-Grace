@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👩 Ms. Grace — Realistic 3D</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;background:linear-gradient(#101c33,#05070f);color:#fff;padding:clamp(10px,3vw,22px);overflow-x:hidden;gap:6px}
+h1{font-size:clamp(22px,5.5vw,44px);text-shadow:0 0 26px #38bdf8;text-align:center}h1 span{color:#fbbf24}
+p.sub{opacity:.7;font-size:clamp(12px,3.2vw,15px);text-align:center}
+#wrap{position:relative;width:min(96vw,600px);height:min(60dvh,540px);border-radius:22px;overflow:hidden;border:2px solid rgba(56,189,248,.4);box-shadow:0 24px 70px rgba(0,0,0,.6),0 0 50px rgba(56,189,248,.15);touch-action:none;cursor:grab}
+#wrap:active{cursor:grabbing}
+#scene{width:100%;height:100%;display:block}
+#loadMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:15px;opacity:.8;line-height:1.7;pointer-events:none;padding:20px}
+#bubble{position:absolute;left:50%;top:6%;transform:translateX(-50%) scale(0);background:#fff;color:#0a1a33;font-weight:900;font-size:clamp(16px,4.6vw,26px);padding:10px 26px;border-radius:20px;transition:transform .3s cubic-bezier(.34,1.8,.64,1);box-shadow:0 10px 34px rgba(0,0,0,.5);max-width:92%;text-align:center;pointer-events:none}
+#bubble.show{transform:translateX(-50%) scale(1)}
+#bubble::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);border:12px solid transparent;border-top-color:#fff;border-bottom:none}
+#tip{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:12px;opacity:.6;pointer-events:none}
+.panel{width:min(96vw,600px);background:rgba(255,255,255,.05);border:1px solid rgba(56,189,248,.25);border-radius:18px;padding:14px;display:grid;gap:10px}
+.prow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.prow label{font-size:12px;opacity:.7;font-weight:700}
+button{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;font-size:clamp(12px,3.2vw,14px);padding:9px 16px;border-radius:30px;cursor:pointer;font-weight:800;white-space:nowrap}
+button:hover{background:rgba(56,189,248,.25);border-color:#38bdf8}
+button.on{background:rgba(56,189,248,.32);border-color:#38bdf8}
+button.warn{background:linear-gradient(135deg,#ef4444,#f59e0b);border:none}
+input[type=text]{flex:1;min-width:180px;padding:10px 14px;border-radius:12px;border:1px solid rgba(56,189,248,.4);background:rgba(0,0,0,.45);color:#fff;font-size:14px}
+input[type=color]{width:44px;height:34px;border:none;border-radius:8px;background:none;cursor:pointer}
+select{background:#0b1526;color:#fff;border:1px solid rgba(56,189,248,.4);border-radius:10px;padding:9px 12px;font-size:13px}
+footer{font-size:11px;opacity:.45;padding-bottom:10px}
+</style>
+</head>
+<body>
+<h1>👩 Meet <span>Ms. GRACE</span> <small style="font-size:.42em;opacity:.7">realistic 3D</small></h1>
+<p class="sub">Three.js WebGL • blinking eyes • drag to spin • scroll to zoom • click her & she talks</p>
+<div id="wrap">
+  <canvas id="scene"></canvas>
+  <div id="loadMsg">⏳ Loading 3D engine…</div>
+  <div id="bubble">Hello! 👋</div>
+  <div id="tip">drag = spin • wheel = zoom • click her = Hello</div>
+</div>
+
+<div class="panel">
+  <div class="prow">
+    <input type="text" id="nameIn" placeholder="Your name? (he'll remember & greet you)" maxlength="20">
+    <button onclick="saveName()">💾 Save</button>
+    <button onclick="sayHello()">👋 Hello</button>
+    <button onclick="chatSay()">💬 Speak ↓</button>
+  </div>
+  <div class="prow"><input type="text" id="chatIn" placeholder='Chat with Grace AI — e.g. "What is your dream?"' maxlength="140"></div>
+  <div class="prow">
+    <label>BLAZER</label><input type="color" id="suitC" value="#232f4d">
+    <label>ACCENT</label><input type="color" id="tieC" value="#b3122f">
+    <label>SKIN</label><input type="color" id="skinC" value="#eab68a">
+    <label>HAIR</label><input type="color" id="hairC" value="#1c1c22">
+    <label>SCENE</label>
+    <select id="sceneSel" onchange="setScene(this.value)">
+      <option value="studio">🎬 Studio</option><option value="party">🎉 Party</option>
+      <option value="space">🚀 Space</option><option value="office">💼 Office</option>
+    </select>
+  </div>
+  <div class="prow">
+    <button onclick="mood('happy')">😄 Happy</button><button onclick="mood('sad')">😢 Sad</button>
+    <button onclick="mood('cool')">😎 Cool</button><button onclick="mood('surprised')">😲 Wow</button>
+    <button id="danceBtn" onclick="toggleDance()">💃 Dance</button>
+    <button id="aiBtn" class="on" onclick="toggleAI()">🤖 AI Brain: ON</button>
+    <button id="spinBtn" onclick="toggleSpin()">🌀 Auto-spin</button>
+    <button id="voiceBtn" onclick="toggleVoice()">🔊 Voice ON</button>
+  </div>
+  <div class="prow">
+    <button onclick="confetti()">🎊 Confetti</button><button onclick="photo()">📸 Photo</button>
+    <button onclick="toggleNight()" id="nightBtn">🌙 Night</button>
+    <button class="warn" onclick="restart()">↻ Restart</button>
+  </div>
+</div>
+<footer>She blinks, breathes & watches you • photo downloads as PNG • name saves in browser</footer>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+/* Load Three.js with fallbacks (cdnjs → jsdelivr → unpkg), then start the app */
+(function(){
+  var urls=[
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+    'https://unpkg.com/three@0.128.0/build/three.min.js'
+  ];
+  var i=0,msg=document.getElementById('loadMsg');
+  function next(){
+    if(i>=urls.length){msg.style.display='flex';msg.innerHTML='⚠️ Could not load the 3D engine.<br>Check your internet connection and refresh.';return}
+    var s=document.createElement('script');s.src=urls[i++];
+    s.onload=function(){if(window.THREE){startApp()}else{next()}};
+    s.onerror=next;document.head.appendChild(s);
+  }
+  // WebGL check first
+  try{var c=document.createElement('canvas');
+    if(!(window.WebGLRenderingContext&&(c.getContext('webgl')||c.getContext('experimental-webgl')))){
+      msg.style.display='flex';msg.innerHTML='⚠️ WebGL is not available in this browser.<br>Try Chrome or Edge with hardware acceleration on.';return}
+  }catch(e){msg.style.display='flex';return}
+  next();
+})();
+function startApp(){
+document.getElementById('loadMsg').style.display='none';
+// ---------- renderer / scene ----------
+const canvas=document.getElementById('scene'),wrap=document.getElementById('wrap'),bubble=document.getElementById('bubble');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(36,1,.1,100);cam.position.set(0,1.2,7.4);
+scene.add(new THREE.HemisphereLight(0xdfeaff,0x1a1428,.85));
+const key=new THREE.DirectionalLight(0xfff2e0,1.0);key.position.set(3,6,4);key.castShadow=true;
+key.shadow.mapSize.set(1024,1024);scene.add(key);
+const rim=new THREE.DirectionalLight(0x38bdf8,.65);rim.position.set(-4,2.5,-3);scene.add(rim);
+const fill=new THREE.DirectionalLight(0xffffff,.25);fill.position.set(-2,1,4);scene.add(fill);
+// floor: soft studio disc catching shadows
+const floor=new THREE.Mesh(new THREE.CircleGeometry(3.6,48),
+  new THREE.MeshStandardMaterial({color:0x111a2e,roughness:.9,transparent:true,opacity:.95}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.62;floor.receiveShadow=true;scene.add(floor);
+const ringM=new THREE.Mesh(new THREE.TorusGeometry(2.3,.025,8,72),
+  new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:.55}));
+ringM.rotation.x=Math.PI/2;ringM.position.y=-2.6;scene.add(ringM);
+// backdrop glow disc
+const glow=new THREE.Mesh(new THREE.CircleGeometry(3.2,48),
+  new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:.10}));
+glow.position.set(0,1,-3.4);scene.add(glow);
+// party lights + stars + confetti
+const party=[];for(let i=0;i<3;i++){const l=new THREE.PointLight([0xff4d8d,0x4ade80,0xfbbf24][i],0,10);l.position.set(Math.cos(i*2)*3,2.5,1.5);scene.add(l);party.push(l)}
+const starGeo=new THREE.BufferGeometry(),sp=new Float32Array(300*3);
+for(let i=0;i<300;i++){sp[i*3]=(Math.random()-.5)*30;sp[i*3+1]=Math.random()*15-3;sp[i*3+2]=-4-Math.random()*10}
+starGeo.setAttribute('position',new THREE.BufferAttribute(sp,3));
+const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff,size:.07,transparent:true,opacity:0}));scene.add(stars);
+const confGeo=new THREE.BufferGeometry(),cp=new Float32Array(240*3),cv=[];
+for(let i=0;i<240;i++){cp[i*3]=(Math.random()-.5)*8;cp[i*3+1]=Math.random()*8;cp[i*3+2]=(Math.random()-.5)*4;cv.push(Math.random()*2+1)}
+confGeo.setAttribute('position',new THREE.BufferAttribute(cp,3));
+const confettiPts=new THREE.Points(confGeo,new THREE.PointsMaterial({color:0xfbbf24,size:.12,transparent:true,opacity:0}));scene.add(confettiPts);
+let confettiOn=false;
+
+// ---------- materials (skin-like, cloth-like) ----------
+const M={
+  skin:new THREE.MeshStandardMaterial({color:0xeab68a,roughness:.55,metalness:.02}),
+  skinD:new THREE.MeshStandardMaterial({color:0xd69c6e,roughness:.6}),
+  suit:new THREE.MeshStandardMaterial({color:0x232f4d,roughness:.75,metalness:.08}),
+  shirt:new THREE.MeshStandardMaterial({color:0xf2f5fa,roughness:.65}),
+  tie:new THREE.MeshStandardMaterial({color:0xb3122f,roughness:.45,metalness:.1}),
+  hair:new THREE.MeshStandardMaterial({color:0x1c1c22,roughness:.55,metalness:.1}),
+  white:new THREE.MeshStandardMaterial({color:0xf8f8f8,roughness:.2}),
+  iris:new THREE.MeshStandardMaterial({color:0x4a2f1d,roughness:.25}),
+  pupil:new THREE.MeshStandardMaterial({color:0x0a0a0a,roughness:.15}),
+  mouthIn:new THREE.MeshStandardMaterial({color:0x571d1d,roughness:.8}),
+  tongue:new THREE.MeshStandardMaterial({color:0xd1526e,roughness:.6}),
+  teeth:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.3}),
+};
+function mesh(geo,mat,x=0,y=0,z=0){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;return m}
+
+// ---------- build man (realistic proportions) ----------
+const man=new THREE.Group();scene.add(man);
+// legs: skin + heels, skirt over hips
+[-1,1].forEach(s=>{
+  const leg=mesh(new THREE.CylinderGeometry(.17,.20,1.5,12),M.skin,s*.26,-2.05,0);man.add(leg);
+  const heel=mesh(new THREE.BoxGeometry(.24,.10,.42),new THREE.MeshStandardMaterial({color:0xb3122f,roughness:.3}),s*.26,-2.80,.10);man.add(heel);
+  const heelTip=mesh(new THREE.CylinderGeometry(.03,.03,.22,8),new THREE.MeshStandardMaterial({color:0x14100c}),s*.26,-2.86,-.06);man.add(heelTip);
+});
+const skirt=mesh(new THREE.CylinderGeometry(.80,1.18,1.25,20),M.suit,0,-1.85,0);man.add(skirt);
+// torso blouse (slimmer)
+const torso=mesh(new THREE.CylinderGeometry(.66,.82,2.0,20),M.suit,0,-.75,0);man.add(torso);
+// jacket lapels
+[-1,1].forEach(s=>{
+  const lap=mesh(new THREE.BoxGeometry(.30,.95,.06),M.suit,s*.30,-.55,1.0);
+  lap.rotation.z=s*-.28;lap.rotation.y=s*.25;man.add(lap);
+  const btn=mesh(new THREE.SphereGeometry(.05,8,8),new THREE.MeshStandardMaterial({color:0x0c0c0c}),s*.10,-1.15,1.02);man.add(btn);
+});
+// shirt + collar + tie
+const shirt=mesh(new THREE.CylinderGeometry(.30,.44,.8,4),M.shirt,0,-.28,.92);shirt.rotation.y=Math.PI/4;shirt.scale.z=.45;man.add(shirt);
+[-1,1].forEach(s=>{const col=mesh(new THREE.BoxGeometry(.30,.16,.06),M.shirt,s*.20,-.02,.90);col.rotation.z=s*.35;col.rotation.y=s*.2;man.add(col)});
+const knot=mesh(new THREE.SphereGeometry(.09,12,12),new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:.2,metalness:.7}),0,-.16,.99);man.add(knot);
+const chainPts=[];for(let a=0;a<=10;a++){const t2=a/10*Math.PI;chainPts.push(new THREE.Vector3(Math.cos(t2)*.30,-.02-Math.sin(t2)*.22,1.0-Math.sin(t2)*.08))}
+const chain=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(chainPts),20,.022,8),knot.material);chain.castShadow=true;man.add(chain);
+// tie replaced by pendant necklace — Ms. Grace style 💎
+// pocket square
+const sq=mesh(new THREE.BoxGeometry(.22,.10,.04),M.tie,-.62,-.55,.92);sq.rotation.z=.2;man.add(sq);
+// arms with elbows + fingers
+function arm(side){
+  const g=new THREE.Group();g.position.set(side*.98,-.05,0);
+  const up=mesh(new THREE.CylinderGeometry(.17,.19,.85,12),M.suit,0,-.42,0);g.add(up);
+  const fore=mesh(new THREE.CylinderGeometry(.14,.16,.8,12),M.suit,0,-1.2,0);g.add(fore);
+  const cuff=mesh(new THREE.CylinderGeometry(.15,.15,.14,12),M.shirt,0,-.85,0);g.add(cuff);
+  const hand=new THREE.Group();hand.position.set(0,-1.65,0);g.add(hand);
+  const palm=mesh(new THREE.SphereGeometry(.16,12,12),M.skin,0,-.08,0);palm.scale.set(.9,1.2,.5);hand.add(palm);
+  for(let f=0;f<4;f++){const fg=mesh(new THREE.CylinderGeometry(.032,.036,.22,8),M.skin,-.09+f*.06,-.30,.02);hand.add(fg)}
+  const th=mesh(new THREE.CylinderGeometry(.032,.036,.18,8),M.skin,.14,-.12,.03);th.rotation.z=-.5;hand.add(th);
+  g.rotation.z=side*-.14;man.add(g);return g;
+}
+const armL=arm(-1),armR=arm(1);
+// neck + head
+const neck=mesh(new THREE.CylinderGeometry(.26,.30,.5,14),M.skinD,0,.55,0);man.add(neck);
+const headG=new THREE.Group();headG.position.y=1.35;man.add(headG);
+// skull: jaw narrower via scaled sphere + chin
+const head=mesh(new THREE.SphereGeometry(.80,32,32),M.skin,0,.10,0);head.scale.set(.88,1.02,.90);headG.add(head);
+const jawBone=mesh(new THREE.SphereGeometry(.55,20,20),M.skin,0,-.42,.10);jawBone.scale.set(.95,.85,.9);headG.add(jawBone);
+const chin=mesh(new THREE.SphereGeometry(.22,14,14),M.skin,0,-.62,.28);headG.add(chin);
+// cheek shading (subtle)
+[-1,1].forEach(s=>{const ch=mesh(new THREE.SphereGeometry(.20,12,12),M.skinD,s*.52,-.18,.55);ch.scale.set(1,.8,.5);headG.add(ch)});
+// nose: bridge + tip + nostrils
+const bridge=mesh(new THREE.BoxGeometry(.10,.32,.10),M.skin,-0,-.02,.80);bridge.rotation.x=.12;headG.add(bridge);
+const noseTip=mesh(new THREE.SphereGeometry(.095,12,12),M.skinD,0,-.20,.86);noseTip.scale.set(1.2,.85,.9);headG.add(noseTip);
+[-1,1].forEach(s=>{const n=mesh(new THREE.SphereGeometry(.032,8,8),new THREE.MeshStandardMaterial({color:0x5a3420}),s*.07,-.24,.90);headG.add(n)});
+// hair: long layered locks down past shoulders
+const hairTop=mesh(new THREE.SphereGeometry(.83,28,20,0,Math.PI*2,0,Math.PI*.46),M.hair,0,.22,-.04);hairTop.scale.set(.90,1,.92);headG.add(hairTop);
+const hairBack=mesh(new THREE.SphereGeometry(.82,24,18),M.hair,0,-.15,-.22);hairBack.scale.set(.92,1.25,.90);headG.add(hairBack);
+[-1,1].forEach(s=>{
+  const lock=mesh(new THREE.SphereGeometry(.26,14,14),M.hair,s*.78,-.55,-.02);lock.scale.set(.62,2.1,.85);headG.add(lock);
+  const sd=mesh(new THREE.SphereGeometry(.30,14,14),M.hair,s*.72,.05,-.05);sd.scale.set(.55,1,.8);headG.add(sd);
+});
+// ears with inner detail
+[-1,1].forEach(s=>{
+  const ear=mesh(new THREE.SphereGeometry(.15,14,14),M.skin,s*.82,-.02,0);ear.scale.set(.55,1,.7);headG.add(ear);
+  const inn=mesh(new THREE.SphereGeometry(.07,10,10),M.skinD,s*.80,-.02,.06);inn.scale.set(.4,.8,.4);headG.add(inn);
+  // gold stud earrings 💎
+  const stud=mesh(new THREE.SphereGeometry(.045,10,10),new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:.15,metalness:.85}),s*.83,-.20,.02);headG.add(stud);
+  const drop=mesh(new THREE.SphereGeometry(.03,8,8),new THREE.MeshStandardMaterial({color:0xffffff,roughness:.1,metalness:.4}),s*.83,-.28,.02);headG.add(drop);
+});
+// blush + brows (thinner, arched)
+[-1,1].forEach(s=>{const bl=mesh(new THREE.SphereGeometry(.13,12,12),new THREE.MeshStandardMaterial({color:0xf0929c,roughness:.7,transparent:true,opacity:.75}),s*.50,-.16,.62);bl.scale.set(1,.7,.4);headG.add(bl)});
+const browG=new THREE.BoxGeometry(.34,.055,.07);
+const browL=mesh(browG,M.hair,-.33,.42,.72);browL.rotation.z=.08;headG.add(browL);
+const browR=mesh(browG,M.hair,.33,.42,.72);browR.rotation.z=-.08;headG.add(browR);
+// eye sockets + eyes with lids (blink) + iris + pupil + glint
+function eye(x){
+  const g=new THREE.Group();g.position.set(x,.10,.72);headG.add(g);
+  const sock=mesh(new THREE.SphereGeometry(.19,16,16),M.skinD,0,0,-.02);sock.scale.set(1,.85,.5);g.add(sock);
+  const lidG=new THREE.Group();g.add(lidG);
+  const w=mesh(new THREE.SphereGeometry(.155,18,18),M.white,0,0,.06);w.scale.set(1.15,.85,.55);lidG.add(w);
+  const iris=mesh(new THREE.SphereGeometry(.072,14,14),M.iris,0,0,.155);iris.scale.z=.5;lidG.add(iris);
+  const pup=mesh(new THREE.SphereGeometry(.038,12,12),M.pupil,0,0,.21);pup.scale.z=.5;lidG.add(pup);
+  const glint=new THREE.Mesh(new THREE.SphereGeometry(.022,8,8),new THREE.MeshBasicMaterial({color:0xffffff}));glint.position.set(.04,.05,.245);lidG.add(glint);
+  // upper lid for blinking
+  const lid=mesh(new THREE.SphereGeometry(.165,16,12,0,Math.PI*2,0,Math.PI*.5),M.skin,0,.01,.05);
+  lid.rotation.x=-.4;lid.scale.set(1.15,.6,.8);lid.visible=false;g.add(lid);
+  // eyelid crease (natural fold line above eye)
+  const crease=mesh(new THREE.TorusGeometry(.16,.012,8,20,Math.PI),M.skinD,0,.10,.10);
+  headG.add(crease);crease.position.x=x;
+  // eyelashes: outer-corner flick
+  const lash=mesh(new THREE.BoxGeometry(.13,.025,.025),M.hair,x<0?-.155:.155,.15,.12);
+  lash.rotation.z=x<0?.5:-.5;g.add(lash);
+  return {pup,iris,lidG,lid};
+}
+const eyeL=eye(-.29),eyeR=eye(.29);
+// smile with sculpted lipstick lips (cupid's bow + full lower lip)
+const lipC=new THREE.MeshStandardMaterial({color:0xc93355,roughness:.35});
+const lipUpL=mesh(new THREE.SphereGeometry(.11,12,10),lipC,-.09,-.44,.74);lipUpL.scale.set(1,.55,.5);headG.add(lipUpL);
+const lipUpR=mesh(new THREE.SphereGeometry(.11,12,10),lipC,.09,-.44,.74);lipUpR.scale.set(1,.55,.5);headG.add(lipUpR);
+const lipLow=mesh(new THREE.SphereGeometry(.16,14,12),lipC,0,-.52,.72);lipLow.scale.set(1.25,.55,.5);headG.add(lipLow);
+const smileUp=mesh(new THREE.TorusGeometry(.22,.022,10,24,Math.PI),new THREE.MeshStandardMaterial({color:0x7c2233,roughness:.5}),0,-.47,.75);smileUp.rotation.z=Math.PI;headG.add(smileUp);
+// jaw
+const jawG=new THREE.Group();jawG.position.set(0,-.50,.62);headG.add(jawG);
+const chinJaw=mesh(new THREE.SphereGeometry(.34,16,14),M.skin,0,-.10,-.05);chinJaw.scale.set(1,.8,.9);jawG.add(chinJaw);
+const mouthIn=mesh(new THREE.SphereGeometry(.22,16,12),M.mouthIn,0,-.06,.22);mouthIn.scale.set(1.15,.6,.5);jawG.add(mouthIn);
+const teeth=mesh(new THREE.BoxGeometry(.30,.07,.06),M.teeth,0,.045,.30);jawG.add(teeth);
+const tongue=mesh(new THREE.SphereGeometry(.10,12,10),M.tongue,0,-.12,.22);tongue.scale.set(1,.45,1);jawG.add(tongue);
+jawG.visible=false;
+// shades
+const shades=new THREE.Group();
+[-1,1].forEach(s=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.46,.30,.08),new THREE.MeshStandardMaterial({color:0x0a0a0a,roughness:.12,metalness:.55}));l.position.set(s*.33,.10,.78);shades.add(l)});
+const br=new THREE.Mesh(new THREE.BoxGeometry(.22,.06,.06),shades.children[0].material);br.position.set(0,.13,.78);shades.add(br);
+shades.visible=false;headG.add(shades);
+
+// ---------- state ----------
+let mx=0,my=0,rotY=0,camZ=7.4,dragging=false,px=0,dancing=false,spinning=false,voiceOn=true,night=false;
+let jawOpen=0,jawTarget=0,wave=0,waveTarget=0,t=0,curMood='happy';
+let blinkT=2.5,blinkP=0; // blink timer
+let userName='';try{userName=localStorage.getItem('suit_name')||'';if(userName)document.getElementById('nameIn').value=userName}catch(_){}
+
+function resize(){const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+addEventListener('pointermove',e=>{if(dragging)return;mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2});
+wrap.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;wrap.setPointerCapture(e.pointerId)});
+wrap.addEventListener('pointermove',e=>{if(dragging){rotY+=(e.clientX-px)*.01;px=e.clientX}});
+addEventListener('pointerup',()=>dragging=false);
+wrap.addEventListener('wheel',e=>{e.preventDefault();camZ=Math.max(4.5,Math.min(11.5,camZ+e.deltaY*.004));cam.position.z=camZ},{passive:false});
+let downX=0,downY=0;
+wrap.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY});
+wrap.addEventListener('pointerup',e=>{if(Math.hypot(e.clientX-downX,e.clientY-downY)<8)sayHello()});
+
+// ---------- speech ----------
+function speak(text){if(!voiceOn)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.02;speechSynthesis.speak(u)}catch(_){}}
+function talk(text,spoken){jawTarget=1;waveTarget=1;bubble.textContent=text;
+  bubble.classList.remove('show');void bubble.offsetWidth;bubble.classList.add('show');
+  speak(spoken||text);setTimeout(()=>jawTarget=0,1300+text.length*22);setTimeout(()=>waveTarget=0,2200);
+  setTimeout(()=>bubble.classList.remove('show'),2800+text.length*20)}
+function sayHello(){talk(userName?`Hello ${userName}! 👋`:'Hello! 👋',userName?`Hello ${userName}! Welcome to the website!`:'Hello! Welcome to the website!')}
+function chatSay(){const v=document.getElementById('chatIn').value.trim();if(!v)return;
+  document.getElementById('chatIn').value='';
+  if(aiOn){askGraceAI(v)}else{talk(v.length>60?v.slice(0,60)+'…':v,v)}}
+// ---------- live AI brain (free, no key, works on GitHub Pages) ----------
+let aiOn=true;
+function toggleAI(){aiOn=!aiOn;document.getElementById('aiBtn').textContent=aiOn?'🤖 AI Brain: ON':'🤖 AI Brain: OFF';
+  document.getElementById('aiBtn').classList.toggle('on',aiOn);
+  if(aiOn)talk('My AI brain is online! Ask me anything.','My AI brain is online!')}
+async function askGraceAI(q){
+  bubble.textContent='💭 thinking…';bubble.classList.add('show');jawTarget=.4;
+  const who=userName?` The user's name is ${userName}.`:'';
+  const prompt=`You are Grace, a warm friendly 3D woman on a website. Reply in ONE short sentence, max 22 words, playful and kind.${who} User says: ${q}`;
+  const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),25000));
+  try{
+    if(typeof puter==='undefined'||!puter.ai||!puter.ai.chat)throw new Error('engine');
+    const res=await Promise.race([puter.ai.chat(prompt,{model:'gpt-4o-mini'}),timeout]);
+    let a='';
+    if(typeof res==='string')a=res;
+    else if(res&&res.message){a=typeof res.message.content==='string'?res.message.content:(res.message.content||[]).map(c=>c.text||'').join(' ')}
+    a=(a||'').trim();
+    if(!a)throw new Error('empty');
+    if(a.length>160)a=a.slice(0,157)+'…';
+    talk(a,a);
+  }catch(e){
+    jawTarget=0;
+    const why=(e&&e.message==='timeout')?' (timed out — slow network?)':(e&&e.message==='engine'?' (AI script blocked — check adblock/internet?)':'');
+    talk('My brain is napping'+why+' — say it again!','Sorry, my AI brain is napping. Try again!');
+  }
+}
+function saveName(){userName=document.getElementById('nameIn').value.trim().slice(0,20);
+  try{localStorage.setItem('suit_name',userName)}catch(_){}
+  talk(userName?`Nice to meet you, ${userName}! 🤝`:'Name cleared!',userName?`Nice to meet you ${userName}!`:'Name cleared')}
+document.getElementById('suitC').oninput=e=>M.suit.color.set(e.target.value);
+document.getElementById('tieC').oninput=e=>M.tie.color.set(e.target.value);
+document.getElementById('skinC').oninput=e=>{M.skin.color.set(e.target.value)};
+document.getElementById('hairC').oninput=e=>{M.hair.color.set(e.target.value)};
+function setScene(v){stars.material.opacity=v==='space'?.9:0;
+  party.forEach(l=>l.intensity=v==='party'?1.4:0);
+  const c=v==='party'?0xec4899:v==='space'?0x8b5cf6:v==='office'?0x4ade80:0x38bdf8;
+  floor.material.color.set(0x111a2e);ringM.material.color.set(c);glow.material.color.set(c);
+  if(v==='space'&&!night)toggleNight(true)}
+function mood(m){curMood=m;shades.visible=m==='cool';
+  browL.position.y=browR.position.y=m==='sad'?.50:m==='surprised'?.52:m==='cool'?.46:.36;
+  browL.rotation.z=m==='sad'?.35:m==='happy'?-.12:m==='surprised'?-.3:0;
+  browR.rotation.z=m==='sad'?-.35:m==='happy'?.12:m==='surprised'?.3:0;
+  smileUp.rotation.z=m==='sad'?0:Math.PI;smileUp.position.y=m==='sad'?-.55:-.47;
+  if(m==='surprised'){jawTarget=1;setTimeout(()=>jawTarget=0,1200)}
+  talk(m==='happy'?'😄 Feeling great!':m==='sad'?'😢 Cheer me up…':m==='cool'?'😎 Too cool.':'😲 Wow!!',
+       m==='happy'?'Feeling great!':m==='sad'?'Cheer me up':m==='cool'?'Too cool.':'Wow!')}
+function toggleDance(){dancing=!dancing;document.getElementById('danceBtn').classList.toggle('on',dancing)}
+function toggleSpin(){spinning=!spinning;document.getElementById('spinBtn').classList.toggle('on',spinning)}
+function toggleVoice(){voiceOn=!voiceOn;document.getElementById('voiceBtn').textContent=voiceOn?'🔊 Voice ON':'🔇 Voice OFF';if(!voiceOn)try{speechSynthesis.cancel()}catch(_){}}
+function toggleNight(force){night=force!==undefined?force:!night;document.getElementById('nightBtn').classList.toggle('on',night);
+  scene.background=night?new THREE.Color(0x02040a):null;key.intensity=night?.4:1.0;rim.intensity=night?1.1:.65}
+function confetti(){confettiOn=true;confettiPts.material.opacity=1;
+  const p=confGeo.attributes.position.array;
+  for(let i=0;i<240;i++){p[i*3]=(Math.random()-.5)*8;p[i*3+1]=4+Math.random()*5;p[i*3+2]=(Math.random()-.5)*4}
+  setTimeout(()=>{confettiOn=false;confettiPts.material.opacity=0},3500)}
+function photo(){renderer.render(scene,cam);const a=document.createElement('a');a.download='ms-grace.png';a.href=canvas.toDataURL('image/png');a.click();talk('📸 Looking gorgeous!','Looking gorgeous!')}
+function restart(){dancing=false;spinning=false;jawTarget=0;rotY=0;mx=my=0;jawOpen=0;jawG.visible=false;
+  bubble.classList.remove('show');document.getElementById('danceBtn').classList.remove('on');document.getElementById('spinBtn').classList.remove('on');
+  if(night)toggleNight(false);mood('happy');talk('Hello! 👋','Hello! Welcome to the website!')}
+
+// ---------- loop ----------
+(function loop(){
+  requestAnimationFrame(loop);t+=.016;
+  // pupils + iris track cursor
+  [eyeL,eyeR].forEach(e=>{
+    e.pup.position.x+=((mx*.06)-e.pup.position.x)*.15;
+    e.pup.position.y+=((-my*.05)-e.pup.position.y)*.15;
+    e.iris.position.x=e.pup.position.x*.6;e.iris.position.y=e.pup.position.y*.6;
+  });
+  // blinking
+  blinkT-=.016;
+  if(blinkT<=0){blinkP=1;blinkT=2.2+Math.random()*3}
+  if(blinkP>0){blinkP=Math.max(0,blinkP-.12);
+    const s=Math.sin(blinkP*Math.PI);
+    eyeL.lid.visible=eyeR.lid.visible=s>.15;
+    eyeL.lidG.scale.y=eyeR.lidG.scale.y=1-s*.9;
+  }
+  // head follows cursor
+  headG.rotation.y+=((mx*.42+rotY*.10)-headG.rotation.y)*.08;
+  headG.rotation.x+=((my*.22)-headG.rotation.x)*.08;
+  if(spinning&&!dragging)rotY+=.01;
+  man.rotation.y+=(rotY-man.rotation.y)*.08;
+  // jaw
+  jawOpen+=(jawTarget-jawOpen)*.16;
+  jawG.visible=jawOpen>.05;
+  jawG.rotation.x=jawOpen*.85;jawG.position.y=-.50-jawOpen*.07;
+  // breathing: chest + shoulders
+  const br=Math.sin(t*1.6);
+  man.position.y=br*.035+(dancing?Math.abs(Math.sin(t*5))*.35:0);
+  torso.scale.x=1+br*.008;
+  headG.position.y=1.35+br*.015;
+  // wave
+  waveTarget=Math.max(waveTarget,jawTarget);wave+=(waveTarget-wave)*.1;
+  armR.rotation.x=-wave*2.2+Math.sin(t*9)*.35*wave;
+  if(dancing){man.rotation.y=Math.sin(t*3)*.5;armL.rotation.x=-2.4+Math.sin(t*6)*.5;armR.rotation.x=-2.4-Math.sin(t*6)*.5;headG.rotation.z=Math.sin(t*3)*.12}
+  else{headG.rotation.z*=.9;if(!waveTarget)armL.rotation.x*=.9}
+  party.forEach((l,i)=>{if(l.intensity>0)l.intensity=1+Math.sin(t*6+i*2)*.5});
+  ringM.rotation.z+=.003;stars.rotation.y+=.0004;
+  if(confettiOn){const p=confGeo.attributes.position.array;
+    for(let i=0;i<240;i++){p[i*3+1]-=cv[i]*.03;if(p[i*3+1]<-3)p[i*3+1]=5}
+    confGeo.attributes.position.needsUpdate=true}
+  renderer.render(scene,cam);
+})();
+if(userName)setTimeout(()=>talk(`Welcome back, ${userName}! 👋`,`Welcome back ${userName}!`),800);
+// expose controls to HTML buttons
+window.sayHello=sayHello;window.chatSay=chatSay;window.saveName=saveName;window.setScene=setScene;
+window.mood=mood;window.toggleDance=toggleDance;window.toggleSpin=toggleSpin;window.toggleVoice=toggleVoice;
+window.toggleNight=toggleNight;window.confetti=confetti;window.photo=photo;window.restart=restart;
+} /* end startApp */
+</script>
+</body>
+</html>
