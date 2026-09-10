@@ -42,12 +42,18 @@ footer{font-size:11px;opacity:.45;padding-bottom:10px}
 
 <div class="panel">
   <div class="prow">
-    <input type="text" id="nameIn" placeholder="Your name? (he'll remember & greet you)" maxlength="20">
+    <input type="text" id="nameIn" placeholder="Your name? (she'll remember & greet you)" maxlength="20">
     <button onclick="saveName()">💾 Save</button>
     <button onclick="sayHello()">👋 Hello</button>
-    <button onclick="chatSay()">💬 Speak ↓</button>
   </div>
-  <div class="prow"><input type="text" id="chatIn" placeholder='Chat with Grace AI — e.g. "What is your dream?"' maxlength="140"></div>
+  <div class="prow">
+    <input type="text" id="sayIn" placeholder='🗣️ Say: type anything — she speaks it exactly' maxlength="140">
+    <button onclick="sayIt()">🔊 Speak</button>
+  </div>
+  <div class="prow">
+    <input type="text" id="chatIn" placeholder='🤖 Ask AI: she thinks & replies smartly' maxlength="140">
+    <button onclick="chatSay()">🤖 Ask</button>
+  </div>
   <div class="prow">
     <label>BLAZER</label><input type="color" id="suitC" value="#232f4d">
     <label>ACCENT</label><input type="color" id="tieC" value="#b3122f">
@@ -287,9 +293,12 @@ function talk(text,spoken){jawTarget=1;waveTarget=1;bubble.textContent=text;
   speak(spoken||text);setTimeout(()=>jawTarget=0,1300+text.length*22);setTimeout(()=>waveTarget=0,2200);
   setTimeout(()=>bubble.classList.remove('show'),2800+text.length*20)}
 function sayHello(){talk(userName?`Hello ${userName}! 👋`:'Hello! 👋',userName?`Hello ${userName}! Welcome to the website!`:'Hello! Welcome to the website!')}
+function sayIt(){const v=document.getElementById('sayIn').value.trim();if(!v)return;talk(v.length>70?v.slice(0,67)+'…':v,v)}
 function chatSay(){const v=document.getElementById('chatIn').value.trim();if(!v)return;
   document.getElementById('chatIn').value='';
-  if(aiOn){askGraceAI(v)}else{talk(v.length>60?v.slice(0,60)+'…':v,v)}}
+  if(aiOn){askGraceAI(v)}else{talk('Turn my AI brain ON to get smart replies!','Turn my AI brain on first!')}}
+['sayIn','chatIn','nameIn'].forEach(id=>{document.getElementById(id).addEventListener('keydown',e=>{
+  if(e.key==='Enter'){if(id==='sayIn')sayIt();else if(id==='chatIn')chatSay();else saveName()}})});
 // ---------- live AI brain (free, no key, works on GitHub Pages) ----------
 let aiOn=true;
 function toggleAI(){aiOn=!aiOn;document.getElementById('aiBtn').textContent=aiOn?'🤖 AI Brain: ON':'🤖 AI Brain: OFF';
@@ -395,7 +404,7 @@ function restart(){dancing=false;spinning=false;jawTarget=0;rotY=0;mx=my=0;jawOp
 })();
 if(userName)setTimeout(()=>talk(`Welcome back, ${userName}! 👋`,`Welcome back ${userName}!`),800);
 // expose controls to HTML buttons
-window.sayHello=sayHello;window.chatSay=chatSay;window.saveName=saveName;window.setScene=setScene;
+window.sayHello=sayHello;window.chatSay=chatSay;window.sayIt=sayIt;window.saveName=saveName;window.setScene=setScene;
 window.mood=mood;window.toggleDance=toggleDance;window.toggleSpin=toggleSpin;window.toggleVoice=toggleVoice;
 window.toggleNight=toggleNight;window.confetti=confetti;window.photo=photo;window.restart=restart;
 } /* end startApp */
